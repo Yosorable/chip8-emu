@@ -17,8 +17,8 @@ func main() {
 	defer sdl.Quit()
 	sdl.StopTextInput()
 
-	// rom := "ROMS/PONG"
-	rom := "ROMS/TETRIS"
+	rom := "ROMS/PONG"
+	// rom := "ROMS/TETRIS"
 	// rom := "ROMS/15PUZZLE"
 	data, err := os.ReadFile(rom)
 	if err != nil {
@@ -26,4 +26,6 @@ func main() {
 	}
 
 	emu.StartGame(data)
+	// compile2(data)
+	// emu.StartGameWithCompiledProgram(data)
 }

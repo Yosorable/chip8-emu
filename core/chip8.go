@@ -50,14 +50,15 @@ func (emu *Chip8) Initialize() {
 
 }
 
-func (emu *Chip8) StartGame(rom []uint8) {
+func (emu *Chip8) StartGameWithCompiledProgram(rom []byte) {
 	copy(emu.memory.storage[0x200:], rom)
+	emu.cpu.compiled = NewCompiled()
+	emu.cpu.compiled.emu = emu
 	emu.cpu.PC = 0x200
-
 	running := true
 
 	timer_ticker := time.NewTicker(time.Second / 60)
-	frame_ticker := time.NewTicker(time.Second / 60)
+	//frame_ticker := time.NewTicker(time.Second / 60)
 
 	go func() {
 		for {
@@ -74,7 +75,63 @@ func (emu *Chip8) StartGame(rom []uint8) {
 			emu.sound_timer_mtx.Unlock()
 		}
 	}()
+
+	last_time := time.Now()
 	for frame := 0; running; frame++ {
+		if frame == 1000 {
+			log.Printf("fps: %f\n", 1000.0*1000/float64(time.Now().UnixMilli()-last_time.UnixMilli()))
+			frame = 0
+			last_time = time.Now()
+		}
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event := event.(type) {
+			case *sdl.QuitEvent:
+				log.Println("Quit")
+				running = false
+			case *sdl.KeyboardEvent:
+				emu.SetKey(int(event.Keysym.Sym), event.Type == sdl.KEYDOWN)
+			}
+		}
+		if !emu.wait_key_pressed {
+			emu.cpu.compiled.Run(emu.cpu.PC)
+		}
+		emu.screen.draw()
+		//<-frame_ticker.C
+	}
+}
+
+func (emu *Chip8) StartGame(rom []uint8) {
+	copy(emu.memory.storage[0x200:], rom)
+	emu.cpu.PC = 0x200
+
+	running := true
+
+	timer_ticker := time.NewTicker(time.Second / 60)
+	// frame_ticker := time.NewTicker(time.Second / 60)
+
+	go func() {
+		for {
+			<-timer_ticker.C
+			emu.delay_timer_mtx.Lock()
+			if emu.delay_timer > 0 {
+				emu.delay_timer--
+			}
+			emu.delay_timer_mtx.Unlock()
+			emu.sound_timer_mtx.Lock()
+			if emu.sound_timer > 0 {
+				emu.sound_timer--
+			}
+			emu.sound_timer_mtx.Unlock()
+		}
+	}()
+
+	last_time := time.Now()
+	for frame := 0; running; frame++ {
+		if frame == 1000 {
+			log.Printf("fps: %f\n", 1000.0*1000/float64(time.Now().UnixMilli()-last_time.UnixMilli()))
+			frame = 0
+			last_time = time.Now()
+		}
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event := event.(type) {
 			case *sdl.QuitEvent:
@@ -91,7 +148,7 @@ func (emu *Chip8) StartGame(rom []uint8) {
 			}
 		}
 		emu.screen.draw()
-		<-frame_ticker.C
+		// <-frame_ticker.C
 	}
 }
 

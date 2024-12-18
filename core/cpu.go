@@ -11,6 +11,8 @@ type cpu struct {
 	PC uint16    // program counter
 
 	emu *Chip8
+
+	compiled *compiled
 }
 
 func (c *cpu) Initialize() {
@@ -22,7 +24,7 @@ func (c *cpu) Initialize() {
 }
 
 func logCode(opcode uint16, tp string) {
-	debug := true
+	debug := false
 	if debug {
 		log.Printf("[opcode] code: 0x%04X, type: %s", opcode, tp)
 	}

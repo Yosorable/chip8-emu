@@ -26,3 +26,4 @@ go.work.sum
 
 !SDL2.dll
 !chip8-emu.exe
+!chip8-emu-compiled-pong.exe
